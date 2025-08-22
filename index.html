@@ -1,0 +1,1538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Career Path Simulator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #0a0a0a 100%);
+            color: #00ff41;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 16px;
+            line-height: 1.8;
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Retro CRT effect */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                linear-gradient(transparent 50%, rgba(0,255,65,0.03) 50%),
+                linear-gradient(90deg, transparent 50%, rgba(255,0,150,0.02) 50%);
+            background-size: 100% 4px, 4px 100%;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        .terminal-container {
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            border: 4px solid #00ff41;
+            box-shadow: 0 0 50px rgba(0,255,65,0.3), inset 0 0 50px rgba(0,255,65,0.1);
+            background: rgba(0,0,0,0.9);
+        }
+
+        .system-header {
+            background: linear-gradient(90deg, #1a1a2e, #16213e, #1a1a2e);
+            border-bottom: 2px solid #00ff41;
+            padding: 8px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            box-shadow: 0 2px 10px rgba(0,255,65,0.2);
+        }
+
+        .system-info {
+            display: flex;
+            gap: 20px;
+            color: #ffd700;
+        }
+
+        .system-controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        .control-btn {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 1px solid;
+        }
+
+        .btn-close { background: #ff4757; border-color: #ff3838; }
+        .btn-min { background: #ffa502; border-color: #ff9500; }
+        .btn-max { background: #2ed573; border-color: #20bf6b; }
+
+        .main-header {
+            background: linear-gradient(45deg, #0f0f23 0%, #1a1a2e 50%, #0f0f23 100%);
+            border-bottom: 3px double #00ff41;
+            padding: 15px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .main-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0,255,65,0.1), transparent);
+            animation: scan 3s infinite;
+        }
+
+        @keyframes scan {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        .title-main {
+            font-size: 28px;
+            font-weight: bold;
+            color: #00ffff;
+            text-shadow: 0 0 20px rgba(0,255,255,0.5);
+            letter-spacing: 3px;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            font-size: 14px;
+            color: #ffd700;
+            letter-spacing: 1px;
+        }
+
+        .content {
+            flex: 1;
+            padding: 25px;
+            overflow-y: auto;
+            position: relative;
+            scrollbar-width: thin;
+            scrollbar-color: #00ff41 rgba(0,0,0,0.3);
+        }
+
+        .content::-webkit-scrollbar {
+            width: 12px;
+        }
+
+        .content::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.3);
+            border-radius: 6px;
+        }
+
+        .content::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, #00ff41, #00cc33);
+            border-radius: 6px;
+        }
+
+        .section-divider {
+            display: flex;
+            align-items: center;
+            margin: 30px 0 20px 0;
+            text-align: center;
+        }
+
+        .section-divider::before,
+        .section-divider::after {
+            content: '';
+            flex: 1;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00ff41, transparent);
+        }
+
+        .section-title {
+            color: #ff6b9d;
+            font-size: 20px;
+            font-weight: bold;
+            margin: 0 20px;
+            padding: 8px 16px;
+            border: 2px solid #ff6b9d;
+            border-radius: 8px;
+            background: rgba(255,107,157,0.1);
+            text-shadow: 0 0 10px rgba(255,107,157,0.5);
+            animation: glow-pink 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow-pink {
+            from { box-shadow: 0 0 10px rgba(255,107,157,0.2); }
+            to { box-shadow: 0 0 25px rgba(255,107,157,0.4); }
+        }
+
+        .character-ascii {
+            color: #ffd700;
+            font-size: 12px;
+            text-align: center;
+            margin: 20px 0;
+            line-height: 1.2;
+            text-shadow: 0 0 10px rgba(255,215,0,0.3);
+        }
+
+        .story-text {
+            color: #00ffff;
+            margin: 20px 0;
+            padding: 20px;
+            border-left: 4px solid #00ffff;
+            border-radius: 0 8px 8px 0;
+            background: linear-gradient(90deg, rgba(0,255,255,0.1), transparent);
+            font-size: 18px;
+            text-shadow: 0 0 8px rgba(0,255,255,0.3);
+        }
+
+        .options-container {
+            margin: 25px 0;
+            padding: 20px;
+            border: 2px solid #9b59b6;
+            border-radius: 12px;
+            background: linear-gradient(135deg, rgba(155,89,182,0.1), rgba(155,89,182,0.05));
+        }
+
+        .options-header {
+            color: #e74c3c;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-align: center;
+            text-decoration: underline;
+            text-shadow: 0 0 10px rgba(231,76,60,0.4);
+        }
+
+        .option {
+            margin: 12px 0;
+            padding: 15px 20px;
+            background: linear-gradient(90deg, rgba(0,255,65,0.1), rgba(0,255,65,0.05));
+            border: 2px solid #00ff41;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            font-size: 16px;
+        }
+
+        .option.highlighted {
+            background: linear-gradient(90deg, rgba(255,215,0,0.2), rgba(255,215,0,0.1));
+            border-color: #ffd700;
+            color: #ffd700;
+            transform: translateX(10px);
+            box-shadow: 0 0 20px rgba(255,215,0,0.3);
+        }
+
+        .option.selected {
+            background: linear-gradient(90deg, rgba(0,255,65,0.3), rgba(0,255,65,0.15));
+            border-color: #00ff41;
+            color: #00ff41;
+            transform: translateX(15px);
+            box-shadow: 0 0 25px rgba(0,255,65,0.4);
+        }
+
+        .option-number {
+            color: #ff6b9d;
+            font-weight: bold;
+            margin-right: 10px;
+            font-size: 18px;
+        }
+
+        .progress-bar-container {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #00ff41;
+            border-radius: 8px;
+            background: rgba(0,0,0,0.5);
+        }
+
+        .progress-label {
+            color: #ffd700;
+            font-size: 14px;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: rgba(0,0,0,0.7);
+            border: 2px solid #00ff41;
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00ff41, #ffd700, #00ff41);
+            border-radius: 8px;
+            transition: width 0.5s ease;
+            animation: progress-glow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes progress-glow {
+            from { box-shadow: inset 0 0 10px rgba(255,215,0,0.3); }
+            to { box-shadow: inset 0 0 20px rgba(255,215,0,0.6); }
+        }
+
+        .analysis-container {
+            text-align: center;
+            margin: 30px 0;
+            padding: 25px;
+            border: 3px solid #e74c3c;
+            border-radius: 15px;
+            background: linear-gradient(135deg, rgba(231,76,60,0.1), rgba(231,76,60,0.05));
+        }
+
+        .loading-text {
+            color: #00ffff;
+            font-size: 18px;
+            margin: 15px 0;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.05); }
+        }
+
+        .loading-bar {
+            color: #ffd700;
+            font-size: 16px;
+            margin: 10px 0;
+            font-family: monospace;
+        }
+
+        .career-result {
+            border: 4px solid #9b59b6;
+            border-radius: 15px;
+            padding: 25px;
+            margin: 25px 0;
+            background: linear-gradient(135deg, rgba(155,89,182,0.2), rgba(155,89,182,0.1));
+            position: relative;
+            overflow: hidden;
+        }
+
+        .career-result::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, #9b59b6, #e74c3c, #ffd700, #00ffff, #9b59b6);
+            border-radius: 15px;
+            z-index: -1;
+            animation: rainbow-border 3s linear infinite;
+        }
+
+        @keyframes rainbow-border {
+            0% { filter: hue-rotate(0deg); }
+            100% { filter: hue-rotate(360deg); }
+        }
+
+        .career-title {
+            color: #ffd700;
+            font-size: 24px;
+            text-align: center;
+            margin-bottom: 20px;
+            font-weight: bold;
+            text-shadow: 0 0 15px rgba(255,215,0,0.5);
+            letter-spacing: 2px;
+        }
+
+        .career-description {
+            color: #00ff41;
+            font-size: 16px;
+            margin: 15px 0;
+            line-height: 1.8;
+        }
+
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .stat-item {
+            padding: 12px;
+            border: 1px solid #00ffff;
+            border-radius: 8px;
+            background: rgba(0,255,255,0.1);
+            text-align: center;
+        }
+
+        .stat-label {
+            color: #ff6b9d;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            color: #ffd700;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .action-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+
+        .action-btn {
+            padding: 15px 30px;
+            border: 2px solid;
+            border-radius: 10px;
+            background: transparent;
+            color: inherit;
+            font-family: inherit;
+            font-size: 16px;
+            text-transform: uppercase;
+            font-weight: bold;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+
+        .action-btn.highlighted {
+            transform: scale(1.05);
+            box-shadow: 0 0 25px rgba(255,215,0,0.5);
+        }
+
+        .btn-restart {
+            border-color: #00ff41;
+            color: #00ff41;
+        }
+
+        .btn-restart.highlighted {
+            background: rgba(0,255,65,0.2);
+            box-shadow: 0 0 25px rgba(0,255,65,0.5);
+        }
+
+        .btn-exit {
+            border-color: #e74c3c;
+            color: #e74c3c;
+        }
+
+        .btn-exit.highlighted {
+            background: rgba(231,76,60,0.2);
+            box-shadow: 0 0 25px rgba(231,76,60,0.5);
+        }
+
+        .controls-help {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.9);
+            border: 2px solid #00ff41;
+            border-radius: 8px;
+            padding: 12px 16px;
+            font-size: 12px;
+            color: #ffd700;
+            z-index: 100;
+            max-width: 250px;
+            box-shadow: 0 0 20px rgba(0,255,65,0.3);
+        }
+
+        .controls-help .control-group {
+            margin: 4px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .controls-help .key {
+            background: rgba(255,215,0,0.2);
+            border: 1px solid #ffd700;
+            border-radius: 3px;
+            padding: 2px 6px;
+            font-weight: bold;
+            color: #ffd700;
+        }
+
+        .typewriter {
+            overflow: hidden;
+            border-right: 3px solid #00ff41;
+            white-space: nowrap;
+            animation: typing 4s steps(50, end), blink-caret 1s step-end infinite;
+        }
+
+        @keyframes typing {
+            from { width: 0; }
+            to { width: 100%; }
+        }
+
+        @keyframes blink-caret {
+            from, to { border-color: transparent; }
+            50% { border-color: #00ff41; }
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.8s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Responsive design */
+        @media (max-width: 1024px) {
+            .title-main {
+                font-size: 24px;
+                letter-spacing: 2px;
+            }
+
+            .content {
+                padding: 20px;
+            }
+
+            .stats-container {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                gap: 10px;
+            }
+
+            .character-ascii {
+                font-size: 10px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                font-size: 14px;
+                line-height: 1.6;
+            }
+
+            .title-main {
+                font-size: 20px;
+                letter-spacing: 1px;
+            }
+
+            .subtitle {
+                font-size: 12px;
+            }
+
+            .section-title {
+                font-size: 16px;
+                margin: 0 10px;
+                padding: 6px 12px;
+            }
+
+            .story-text, .loading-text {
+                font-size: 14px;
+                padding: 15px;
+            }
+
+            .option {
+                padding: 12px 15px;
+                font-size: 14px;
+            }
+
+            .career-title {
+                font-size: 20px;
+            }
+
+            .career-description {
+                font-size: 14px;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+                align-items: center;
+                gap: 15px;
+            }
+
+            .action-btn {
+                width: 100%;
+                max-width: 300px;
+                padding: 12px 20px;
+                font-size: 14px;
+            }
+
+            .stats-container {
+                grid-template-columns: 1fr;
+                gap: 8px;
+            }
+
+            .character-ascii {
+                font-size: 8px;
+                line-height: 1.1;
+            }
+
+            .controls-help {
+                font-size: 10px;
+                padding: 8px 10px;
+                right: 10px;
+                bottom: 10px;
+            }
+
+            .system-header {
+                font-size: 12px;
+                padding: 6px 10px;
+            }
+
+            .system-info {
+                gap: 10px;
+            }
+
+            .control-btn {
+                width: 10px;
+                height: 10px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                font-size: 13px;
+            }
+
+            .terminal-container {
+                border: 2px solid #00ff41;
+            }
+
+            .title-main {
+                font-size: 18px;
+                letter-spacing: 0.5px;
+            }
+
+            .section-title {
+                font-size: 14px;
+                margin: 0 5px;
+                padding: 4px 8px;
+            }
+
+            .story-text {
+                font-size: 13px;
+                padding: 10px;
+            }
+
+            .option {
+                padding: 10px 12px;
+                font-size: 13px;
+                margin: 8px 0;
+            }
+
+            .option-number {
+                font-size: 16px;
+            }
+
+            .career-title {
+                font-size: 18px;
+            }
+
+            .career-description {
+                font-size: 13px;
+            }
+
+            .character-ascii {
+                font-size: 7px;
+                line-height: 1.0;
+            }
+
+            .loading-text {
+                font-size: 14px;
+            }
+
+            .loading-bar {
+                font-size: 12px;
+            }
+
+            .content {
+                padding: 15px;
+            }
+
+            .career-result, .analysis-container, .options-container {
+                padding: 15px;
+                margin: 15px 0;
+            }
+
+            .progress-bar-container {
+                padding: 10px;
+                margin: 15px 0;
+            }
+
+            .action-btn {
+                font-size: 13px;
+                padding: 10px 15px;
+            }
+        }
+
+        @media (max-width: 320px) {
+            .title-main {
+                font-size: 16px;
+            }
+
+            .character-ascii {
+                font-size: 6px;
+            }
+
+            .system-info span {
+                display: none;
+            }
+
+            .system-info span:first-child {
+                display: inline;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="terminal-container">
+        <!-- System Header -->
+        <div class="system-header">
+            <div class="system-info">
+                <span>CAREER-OS v2.1.3</span>
+                <span id="system-time">00:00:00</span>
+                <span>USER: CANDIDATE</span>
+            </div>
+            <div class="system-controls">
+                <div class="control-btn btn-min"></div>
+                <div class="control-btn btn-max"></div>
+                <div class="control-btn btn-close"></div>
+            </div>
+        </div>
+
+        <!-- Main Header -->
+        <div class="main-header">
+            <div class="title-main">⟨ CAREER PATH SIMULATOR ⟩</div>
+            <div class="subtitle">Advanced AI-Driven Career Analysis System</div>
+        </div>
+
+        <!-- Game Content -->
+        <div class="content" id="gameContent">
+            <!-- Dynamic content will be inserted here -->
+        </div>
+
+        <!-- Controls Help -->
+        <div class="controls-help" id="controlsHelp">
+            <div style="text-align: center; color: #00ffff; font-weight: bold; margin-bottom: 6px;">KEYBOARD CONTROLS</div>
+            <div class="control-group">
+                <span>Select:</span>
+                <span><span class="key">1-4</span> or <span class="key">↑↓</span></span>
+            </div>
+            <div class="control-group">
+                <span>Confirm:</span>
+                <span><span class="key">ENTER</span></span>
+            </div>
+            <div class="control-group">
+                <span>Navigate:</span>
+                <span><span class="key">←→</span></span>
+            </div>
+            <div class="control-group">
+                <span>Restart:</span>
+                <span><span class="key">ESC</span></span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class CareerSimulator {
+            constructor() {
+                this.gameContent = document.getElementById('gameContent');
+                this.currentState = 'intro';
+                this.currentQuestion = 0;
+                this.selectedOption = 0;
+                this.selectedButton = 0;
+                this.scores = {
+                    security: 0,
+                    development: 0,
+                    systems: 0,
+                    data: 0,
+                    creative: 0,
+                    management: 0,
+                    support: 0
+                };
+                
+                this.questions = [
+                    {
+                        text: "What aspect of technology fascinates you the most?",
+                        options: [
+                            { text: "Protecting digital fortresses from cyber invaders", score: { security: 4, systems: 1 } },
+                            { text: "Creating innovative software that changes lives", score: { development: 4, creative: 2 } },
+                            { text: "Architecting robust systems that never fail", score: { systems: 4, management: 1 } },
+                            { text: "Discovering hidden patterns in vast data oceans", score: { data: 4, creative: 1 } }
+                        ]
+                    },
+                    {
+                        text: "When approaching a complex technical challenge, you prefer to:",
+                        options: [
+                            { text: "Methodically analyze each component and dependency", score: { systems: 3, data: 2 } },
+                            { text: "Brainstorm creative solutions and prototype rapidly", score: { development: 3, creative: 3 } },
+                            { text: "Research best practices and security implications", score: { security: 2, support: 2, systems: 1 } },
+                            { text: "Coordinate with experts and manage the big picture", score: { management: 4, support: 1 } }
+                        ]
+                    },
+                    {
+                        text: "Your ideal work environment would be:",
+                        options: [
+                            { text: "High-tech security operations center with multiple monitors", score: { security: 4, systems: 1 } },
+                            { text: "Modern development studio with cutting-edge tools", score: { development: 3, creative: 2 } },
+                            { text: "Collaborative team space with constant communication", score: { management: 3, support: 3 } },
+                            { text: "Quiet research lab with powerful computing resources", score: { data: 4, creative: 1 } }
+                        ]
+                    },
+                    {
+                        text: "Which project would excite you most?",
+                        options: [
+                            { text: "Building an AI system to detect advanced persistent threats", score: { security: 4, data: 2 } },
+                            { text: "Developing a groundbreaking mobile app used by millions", score: { development: 4, creative: 2 } },
+                            { text: "Designing cloud infrastructure for a global corporation", score: { systems: 4, management: 2 } },
+                            { text: "Creating predictive models for financial markets", score: { data: 5 } }
+                        ]
+                    },
+                    {
+                        text: "How do you prefer to acquire new technical skills?",
+                        options: [
+                            { text: "Hands-on experimentation and controlled breaking of systems", score: { security: 3, development: 2 } },
+                            { text: "Structured learning paths with certifications and labs", score: { systems: 3, support: 2 } },
+                            { text: "Academic research papers and theoretical foundations", score: { data: 3, systems: 2 } },
+                            { text: "Collaborative projects with mentoring and peer review", score: { management: 2, development: 2, support: 1 } }
+                        ]
+                    },
+                    {
+                        text: "What drives your passion for technology?",
+                        options: [
+                            { text: "The thrill of outsmarting cybercriminals and protecting others", score: { security: 5 } },
+                            { text: "Bringing innovative ideas to life through elegant code", score: { development: 4, creative: 3 } },
+                            { text: "Building reliable foundations that empower entire organizations", score: { systems: 4, management: 2 } },
+                            { text: "Transforming raw information into actionable intelligence", score: { data: 5 } }
+                        ]
+                    },
+                    {
+                        text: "In team settings, others often describe you as:",
+                        options: [
+                            { text: "The detail-oriented expert who catches critical issues", score: { security: 2, systems: 3 } },
+                            { text: "The creative problem-solver with innovative approaches", score: { development: 3, creative: 3 } },
+                            { text: "The natural leader who coordinates complex initiatives", score: { management: 5 } },
+                            { text: "The patient teacher who helps others understand technology", score: { support: 5 } }
+                        ]
+                    },
+                    {
+                        text: "Which emerging technology trend excites you most?",
+                        options: [
+                            { text: "Quantum computing and post-quantum cryptography", score: { security: 3, data: 2 } },
+                            { text: "Artificial Intelligence and Machine Learning applications", score: { data: 4, development: 2 } },
+                            { text: "Augmented/Virtual Reality and immersive experiences", score: { creative: 4, development: 2 } },
+                            { text: "Edge computing and Internet of Things ecosystems", score: { systems: 4, security: 1 } }
+                        ]
+                    },
+                    {
+                        text: "What motivates you most in your career?",
+                        options: [
+                            { text: "Making the digital world safer for everyone", score: { security: 4, support: 1 } },
+                            { text: "Creating solutions that improve millions of lives", score: { development: 3, creative: 2, management: 1 } },
+                            { text: "Leading teams to achieve ambitious technical goals", score: { management: 5 } },
+                            { text: "Uncovering insights that drive strategic decisions", score: { data: 4, management: 2 } }
+                        ]
+                    },
+                    {
+                        text: "How do you handle high-pressure situations?",
+                        options: [
+                            { text: "Systematically troubleshoot while maintaining security protocols", score: { security: 3, systems: 2 } },
+                            { text: "Focus intensely and code elegant solutions quickly", score: { development: 4, creative: 1 } },
+                            { text: "Coordinate resources and delegate effectively", score: { management: 4, support: 1 } },
+                            { text: "Analyze data patterns to identify root causes", score: { data: 3, systems: 2 } }
+                        ]
+                    }
+                ];
+
+                this.careers = [
+                    {
+                        title: "🛡️ CYBERSECURITY SPECIALIST",
+                        description: "You are the digital guardian of the modern age! Your mission involves protecting critical infrastructure from sophisticated cyber threats, analyzing attack patterns, and implementing robust security measures. You'll work with cutting-edge security tools, conduct threat intelligence analysis, and serve as the first line of defense against cybercriminals.",
+                        outlook: "Explosive growth with 31% job increase expected. Average salary: $95,000-$165,000",
+                        requirements: { security: 20 },
+                        skills: ["Threat Analysis", "Incident Response", "Risk Assessment", "Security Architecture"]
+                    },
+                    {
+                        title: "🎯 ETHICAL HACKER (PENETRATION TESTER)",
+                        description: "You'll think like a criminal to catch criminals! As an ethical hacker, you'll use advanced penetration testing techniques to discover vulnerabilities before malicious actors do. Your creative problem-solving skills and deep technical knowledge will help organizations stay one step ahead of cyber threats.",
+                        outlook: "Premium field with salaries ranging $85,000-$180,000. High demand for skilled professionals",
+                        requirements: { security: 25, development: 8 },
+                        skills: ["Penetration Testing", "Vulnerability Assessment", "Social Engineering", "Exploit Development"]
+                    },
+                    {
+                        title: "💻 SOFTWARE ARCHITECT",
+                        description: "You are a digital architect who designs the blueprints for tomorrow's software! You'll create scalable, maintainable applications that serve millions of users. Your expertise in multiple programming languages and system design will bring innovative ideas to life through elegant, efficient code.",
+                        outlook: "Consistently strong market with 22% growth. Salary range: $85,000-$150,000",
+                        requirements: { development: 20, creative: 8 },
+                        skills: ["System Design", "Multi-language Programming", "API Development", "Software Architecture"]
+                    },
+                    {
+                        title: "📊 DATA SCIENTIST",
+                        description: "You are a digital detective who transforms raw data into business intelligence! Using advanced analytics, machine learning, and statistical modeling, you'll uncover hidden patterns that drive strategic decisions. Your work will directly impact business outcomes and strategic planning.",
+                        outlook: "Rapidly expanding field with 35% growth. Salary range: $95,000-$170,000",
+                        requirements: { data: 20 },
+                        skills: ["Machine Learning", "Statistical Analysis", "Data Visualization", "Predictive Modeling"]
+                    },
+                    {
+                        title: "⚙️ DEVOPS ENGINEER",
+                        description: "You are the bridge between development and operations! You'll automate deployment pipelines, manage cloud infrastructure, and ensure seamless software delivery. Your systematic approach will streamline entire development lifecycles and enable continuous integration and deployment.",
+                        outlook: "High demand with 23% growth. Salary range: $90,000-$155,000",
+                        requirements: { systems: 18, development: 12 },
+                        skills: ["CI/CD Pipelines", "Cloud Platforms", "Infrastructure Automation", "Container Orchestration"]
+                    },
+                    {
+                        title: "🎨 UX/UI DESIGNER",
+                        description: "You are the architect of digital experiences! You'll craft intuitive, beautiful interfaces that delight users and solve complex usability challenges. Your creative vision combined with user research will create products that people love to use.",
+                        outlook: "Growing importance with 13% growth. Salary range: $70,000-$130,000",
+                        requirements: { creative: 18, development: 8 },
+                        skills: ["User Research", "Interface Design", "Prototyping", "Usability Testing"]
+                    },
+                    {
+                        title: "📈 IT PROJECT MANAGER",
+                        description: "You are the conductor of the technology orchestra! You'll lead cross-functional teams to deliver complex technical projects on time and within budget. Your leadership skills will coordinate resources, manage stakeholders, and drive successful digital transformations.",
+                        outlook: "Strong demand with 16% growth. Salary range: $85,000-$145,000",
+                        requirements: { management: 20, support: 10 },
+                        skills: ["Project Management", "Team Leadership", "Stakeholder Management", "Agile Methodologies"]
+                    },
+                    {
+                        title: "☁️ CLOUD SECURITY ENGINEER",
+                        description: "You are the guardian of the cloud! You'll secure cloud infrastructure, implement identity management solutions, and ensure compliance across distributed systems. Your expertise will protect critical business assets in dynamic cloud environments.",
+                        outlook: "Explosive growth with cloud adoption. Salary range: $100,000-$175,000",
+                        requirements: { security: 15, systems: 15 },
+                        skills: ["Cloud Security", "Identity Management", "Compliance", "Infrastructure Security"]
+                    },
+                    {
+                        title: "🤖 AI/ML ENGINEER",
+                        description: "You are building the future of intelligent systems! You'll develop machine learning models, neural networks, and AI applications that solve complex real-world problems. Your work will push the boundaries of what machines can accomplish.",
+                        outlook: "Revolutionary field with unprecedented growth. Salary range: $110,000-$190,000",
+                        requirements: { data: 15, development: 15 },
+                        skills: ["Deep Learning", "Neural Networks", "Model Deployment", "AI Optimization"]
+                    },
+                    {
+                        title: "🔧 SYSTEMS ENGINEER",
+                        description: "You are the backbone of technological infrastructure! You'll design, implement, and maintain complex systems that keep organizations running smoothly. Your expertise ensures reliable, scalable, and efficient operations across all technology platforms.",
+                        outlook: "Steady growth with infrastructure expansion. Salary range: $80,000-$140,000",
+                        requirements: { systems: 20, support: 8 },
+                        skills: ["System Administration", "Network Management", "Performance Optimization", "Infrastructure Design"]
+                    },
+                    {
+                        title: "🔍 MALWARE REVERSE ENGINEER",
+                        description: "You are the digital forensics expert who dissects malicious code! You'll analyze sophisticated malware, understand attack vectors, and develop countermeasures. Your detective skills will help protect organizations from advanced persistent threats.",
+                        outlook: "Specialized field with premium compensation. Salary range: $95,000-$170,000",
+                        requirements: { security: 22, development: 12 },
+                        skills: ["Reverse Engineering", "Malware Analysis", "Binary Analysis", "Threat Intelligence"]
+                    },
+                    {
+                        title: "💬 IT SUPPORT SPECIALIST",
+                        description: "You are the technology hero who solves problems and enables productivity! You'll provide technical support, troubleshoot complex issues, and ensure users can effectively utilize technology. Your communication skills will bridge the gap between complex systems and everyday users.",
+                        outlook: "Stable demand with specialization opportunities. Salary range: $45,000-$75,000",
+                        requirements: { support: 18 },
+                        skills: ["Technical Support", "Problem Solving", "User Training", "System Troubleshooting"]
+                    },
+                    {
+                        title: "🗄️ DATABASE ARCHITECT",
+                        description: "You are the custodian of organizational data! You'll design, optimize, and maintain database systems that store and protect critical business information. Your expertise in data modeling and performance tuning will ensure efficient access to millions of records.",
+                        outlook: "Consistent demand with cloud evolution. Salary range: $75,000-$130,000",
+                        requirements: { data: 15, systems: 12 },
+                        skills: ["Database Design", "Performance Tuning", "Data Modeling", "Backup & Recovery"]
+                    },
+                    {
+                        title: "🚀 SITE RELIABILITY ENGINEER",
+                        description: "You are the guardian of system uptime! You'll ensure that digital services remain available 24/7, automate operations, and build resilient, self-healing systems. Your engineering mindset will create infrastructure that scales to serve millions of users.",
+                        outlook: "High-growth field born from modern scalability needs. Salary range: $95,000-$160,000",
+                        requirements: { systems: 15, development: 12 },
+                        skills: ["System Reliability", "Automation", "Monitoring", "Incident Response"]
+                    },
+                    {
+                        title: "🔗 BLOCKCHAIN DEVELOPER",
+                        description: "You are building the decentralized future! You'll develop smart contracts, cryptocurrency applications, and distributed ledger systems. Your work will revolutionize how we think about trust, transactions, and digital ownership.",
+                        outlook: "Emerging field with high potential. Salary range: $90,000-$180,000",
+                        requirements: { development: 18, security: 10 },
+                        skills: ["Smart Contracts", "Cryptocurrency", "Distributed Systems", "Cryptography"]
+                    },
+                    {
+                        title: "🌐 TECHNOLOGY GENERALIST",
+                        description: "You are the Swiss Army knife of technology! Your adaptability allows you to tackle diverse challenges across multiple domains. You'll wear many hats, continuously learning and evolving with the rapidly changing tech landscape. Your versatility makes you invaluable in any organization.",
+                        outlook: "Flexible career path with opportunities across all sectors. Salary range: $55,000-$95,000",
+                        requirements: { },
+                        skills: ["Adaptability", "Cross-platform Knowledge", "Problem Solving", "Continuous Learning"]
+                    }
+                ];
+
+                this.init();
+            }
+
+            init() {
+                this.updateSystemTime();
+                setInterval(() => this.updateSystemTime(), 1000);
+                this.showIntroScreen();
+                this.setupEventListeners();
+            }
+
+            updateSystemTime() {
+                const now = new Date();
+                const timeStr = now.toTimeString().split(' ')[0];
+                document.getElementById('system-time').textContent = timeStr;
+            }
+
+            setupEventListeners() {
+                document.addEventListener('keydown', (e) => this.handleKeyPress(e));
+            }
+
+            handleKeyPress(e) {
+                switch(this.currentState) {
+                    case 'intro':
+                        if (e.key === 'Enter') {
+                            this.startQuestionnaire();
+                        } else if (e.key === 'Escape') {
+                            this.showExitMessage();
+                        }
+                        break;
+                    case 'question':
+                        if (e.key >= '1' && e.key <= '4') {
+                            const optionIndex = parseInt(e.key) - 1;
+                            this.selectOption(optionIndex);
+                        } else if (e.key === 'ArrowUp') {
+                            e.preventDefault();
+                            this.navigateOptions(-1);
+                        } else if (e.key === 'ArrowDown') {
+                            e.preventDefault();
+                            this.navigateOptions(1);
+                        } else if (e.key === 'Enter') {
+                            this.confirmSelection();
+                        } else if (e.key === 'Escape') {
+                            this.restart();
+                        }
+                        break;
+                    case 'result':
+                        if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+                            e.preventDefault();
+                            this.toggleResultButton();
+                        } else if (e.key === 'Enter') {
+                            this.executeResultAction();
+                        } else if (e.key === 'Escape') {
+                            this.showExitMessage();
+                        } else if (e.key === '1') {
+                            this.restart();
+                        } else if (e.key === '2') {
+                            this.showExitMessage();
+                        }
+                        break;
+                    case 'exit':
+                        if (e.key === 'Enter') {
+                            this.restart();
+                        }
+                        break;
+                }
+            }
+
+            showIntroScreen() {
+                this.currentState = 'intro';
+                this.gameContent.innerHTML = `
+                    <div class="fade-in">
+                        <div class="character-ascii">
+                    ╔════════════════════════════════════════════════════════╗
+                    ║                    🤖 AI CAREER MENTOR                 ║
+                    ║                                                        ║
+                    ║        ██████╗ ██████╗ ██████╗ ███████╗██████╗        ║
+                    ║       ██╔════╝██╔═══██╗██╔══██╗██╔════╝██╔══██╗       ║
+                    ║       ██║     ██║   ██║██║  ██║█████╗  ██████╔╝       ║
+                    ║       ██║     ██║   ██║██║  ██║██╔══╝  ██╔══██╗       ║
+                    ║       ╚██████╗╚██████╔╝██████╔╝███████╗██║  ██║       ║
+                    ║        ╚═════╝ ╚═════╝ ╚═════╝ ╚══════╝╚═╝  ╚═╝       ║
+                    ║                                                        ║
+                    ║           "Analyzing Career Compatibility..."          ║
+                    ╚════════════════════════════════════════════════════════╝
+                        </div>
+
+                        <div class="section-divider">
+                            <div class="section-title">◊ SYSTEM INITIALIZATION ◊</div>
+                        </div>
+
+                        <div class="story-text">
+                            <div class="typewriter">Welcome to the most advanced career analysis system ever created!</div>
+                        </div>
+
+                        <div class="story-text">
+                            I am your AI Career Mentor, equipped with deep learning algorithms trained on thousands of successful career trajectories. My mission is to analyze your unique personality profile, technical aptitudes, and professional preferences to identify your optimal path in the Information Technology sector.
+                        </div>
+
+                        <div class="story-text">
+                            Through a comprehensive assessment of 10 carefully designed scenarios, I will evaluate your compatibility across multiple career dimensions:
+                        </div>
+
+                        <div class="stats-container">
+                            <div class="stat-item">
+                                <div class="stat-label">🔐 Security Focus</div>
+                                <div class="stat-value">Cyber Defense</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">💻 Development Skills</div>
+                                <div class="stat-value">Code Creation</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">⚙️ Systems Thinking</div>
+                                <div class="stat-value">Infrastructure</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">📊 Data Analysis</div>
+                                <div class="stat-value">Intelligence</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">🎨 Creative Design</div>
+                                <div class="stat-value">User Experience</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">👥 Leadership</div>
+                                <div class="stat-value">Team Management</div>
+                            </div>
+                        </div>
+
+                        <div class="story-text">
+                            Based on your responses, I will recommend one of 16+ specialized career paths, each with detailed role descriptions, salary expectations, and growth projections for the next decade.
+                        </div>
+
+                        <div class="action-buttons">
+                            <button class="action-btn btn-restart">⚡ INITIATE CAREER SCAN ⚡</button>
+                        </div>
+
+                        <div style="text-align: center; margin-top: 30px; color: #ffd700; font-size: 14px;">
+                            [ Press ENTER to Begin Analysis ] • [ Press ESC to Exit System ]
+                        </div>
+                    </div>
+                `;
+            }
+
+            navigateOptions(direction) {
+                const options = document.querySelectorAll('.option');
+                if (options.length === 0) return;
+
+                // Remove previous highlight
+                options[this.selectedOption].classList.remove('highlighted');
+
+                // Update selection
+                this.selectedOption += direction;
+                if (this.selectedOption < 0) this.selectedOption = options.length - 1;
+                if (this.selectedOption >= options.length) this.selectedOption = 0;
+
+                // Add new highlight
+                options[this.selectedOption].classList.add('highlighted');
+                options[this.selectedOption].scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+
+            selectOption(index) {
+                const options = document.querySelectorAll('.option');
+                if (index >= 0 && index < options.length) {
+                    // Remove previous highlights
+                    options.forEach(option => option.classList.remove('highlighted'));
+                    
+                    // Set new selection
+                    this.selectedOption = index;
+                    options[this.selectedOption].classList.add('highlighted');
+                    
+                    // Auto-confirm selection after brief delay
+                    setTimeout(() => this.confirmSelection(), 300);
+                }
+            }
+
+            confirmSelection() {
+                const options = document.querySelectorAll('.option');
+                if (options.length > 0 && this.selectedOption >= 0 && this.selectedOption < options.length) {
+                    this.answerQuestion(this.selectedOption);
+                }
+            }
+
+            toggleResultButton() {
+                const buttons = document.querySelectorAll('.action-btn');
+                if (buttons.length === 0) return;
+
+                // Remove previous highlight
+                buttons.forEach(btn => btn.classList.remove('highlighted'));
+
+                // Toggle selection
+                this.selectedButton = this.selectedButton === 0 ? 1 : 0;
+
+                // Add new highlight
+                buttons[this.selectedButton].classList.add('highlighted');
+            }
+
+            executeResultAction() {
+                if (this.selectedButton === 0) {
+                    this.restart();
+                } else {
+                    this.showExitMessage();
+                }
+            }
+
+            startQuestionnaire() {
+                this.currentState = 'question';
+                this.currentQuestion = 0;
+                this.selectedOption = 0;
+                this.scores = {
+                    security: 0,
+                    development: 0,
+                    systems: 0,
+                    data: 0,
+                    creative: 0,
+                    management: 0,
+                    support: 0
+                };
+                this.showQuestion();
+            }
+
+            showQuestion() {
+                const question = this.questions[this.currentQuestion];
+                const progress = ((this.currentQuestion + 1) / this.questions.length) * 100;
+                
+                let optionsHtml = '';
+                question.options.forEach((option, index) => {
+                    const highlightClass = index === 0 ? 'highlighted' : '';
+                    optionsHtml += `
+                        <div class="option ${highlightClass}">
+                            <span class="option-number">[${index + 1}]</span>
+                            ${option.text}
+                        </div>
+                    `;
+                });
+
+                this.selectedOption = 0; // Reset selection to first option
+
+                this.gameContent.innerHTML = `
+                    <div class="fade-in">
+                        <div class="section-divider">
+                            <div class="section-title">⟨ ASSESSMENT PROTOCOL ⟩</div>
+                        </div>
+
+                        <div class="progress-bar-container">
+                            <div class="progress-label">SCAN PROGRESS: Question ${this.currentQuestion + 1} of ${this.questions.length}</div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${progress}%"></div>
+                            </div>
+                        </div>
+
+                        <div class="story-text">
+                            <strong>📋 SCENARIO ${this.currentQuestion + 1}:</strong><br><br>
+                            ${question.text}
+                        </div>
+
+                        <div class="options-container">
+                            <div class="options-header">🎯 SELECT YOUR RESPONSE:</div>
+                            ${optionsHtml}
+                        </div>
+
+                        <div style="text-align: center; margin-top: 20px; color: #00ffff; font-size: 14px;">
+                            [ Keys 1-4: Quick Select ] • [ ↑↓: Navigate ] • [ ENTER: Confirm ] • [ ESC: Restart ]
+                        </div>
+                    </div>
+                `;
+            }
+
+            answerQuestion(answerIndex) {
+                const question = this.questions[this.currentQuestion];
+                const selectedOption = question.options[answerIndex];
+                
+                // Update scores with visual feedback
+                for (const [category, points] of Object.entries(selectedOption.score)) {
+                    this.scores[category] += points;
+                }
+
+                // Add selection feedback
+                const options = document.querySelectorAll('.option');
+                options.forEach(option => option.classList.remove('highlighted'));
+                options[answerIndex].classList.add('selected');
+
+                setTimeout(() => {
+                    this.currentQuestion++;
+                    if (this.currentQuestion < this.questions.length) {
+                        this.showQuestion();
+                    } else {
+                        this.showAnalysis();
+                    }
+                }, 800);
+            }
+
+            showAnalysis() {
+                this.currentState = 'analysis';
+                this.gameContent.innerHTML = `
+                    <div class="fade-in">
+                        <div class="section-divider">
+                            <div class="section-title">◊ NEURAL PROCESSING ◊</div>
+                        </div>
+
+                        <div class="analysis-container">
+                            <div class="character-ascii">
+                        ╔══════════════════════════════════════════════════════╗
+                        ║  🧠 ADVANCED AI ANALYSIS IN PROGRESS 🧠             ║
+                        ║                                                      ║
+                        ║    ███████╗ ██████╗ █████╗ ███╗   ██╗███╗   ██╗    ║
+                        ║    ██╔════╝██╔════╝██╔══██╗████╗  ██║████╗  ██║    ║
+                        ║    ███████╗██║     ███████║██╔██╗ ██║██╔██╗ ██║    ║
+                        ║    ╚════██║██║     ██╔══██║██║╚██╗██║██║╚██╗██║    ║
+                        ║    ███████║╚██████╗██║  ██║██║ ╚████║██║ ╚████║    ║
+                        ║    ╚══════╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝  ╚═══╝    ║
+                        ╚══════════════════════════════════════════════════════╝
+                            </div>
+
+                            <div class="loading-text">🔍 Analyzing personality matrix...</div>
+                            <div class="loading-bar">████████████████████████████████ 100%</div>
+                            
+                            <div class="loading-text">⚡ Processing technical aptitudes...</div>
+                            <div class="loading-bar">████████████████████████████████ 100%</div>
+                            
+                            <div class="loading-text">🎯 Matching career compatibility scores...</div>
+                            <div class="loading-bar">████████████████████████████████ 100%</div>
+                            
+                            <div class="loading-text">📊 Generating comprehensive career profile...</div>
+                            <div class="loading-bar">████████████████████████████████ 100%</div>
+                            
+                            <div class="loading-text">✨ Finalizing recommendation engine...</div>
+                            <div class="loading-bar">████████████████████████████████ 100%</div>
+
+                            <div style="margin-top: 30px; color: #ffd700; font-size: 18px; font-weight: bold;">
+                                🚀 ANALYSIS COMPLETE! GENERATING RESULTS...
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                setTimeout(() => this.showResult(), 4000);
+            }
+
+            showResult() {
+                this.currentState = 'result';
+                this.selectedButton = 0; // Reset to first button
+                const recommendedCareer = this.determineCareer();
+                
+                // Calculate score breakdown for display
+                const maxScore = Math.max(...Object.values(this.scores));
+                const scoreDisplay = Object.entries(this.scores)
+                    .map(([category, score]) => {
+                        const percentage = maxScore > 0 ? Math.round((score / maxScore) * 100) : 0;
+                        const barWidth = Math.max(percentage, 5); // Minimum 5% for visibility
+                        return `
+                            <div style="margin: 10px 0; color: #00ff41;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                                    <span style="text-transform: capitalize; color: #ffd700;">${category}:</span>
+                                    <span style="color: #ff6b9d;">${score} pts</span>
+                                </div>
+                                <div style="width: 100%; background: rgba(0,0,0,0.5); border: 1px solid #00ff41; border-radius: 5px; overflow: hidden;">
+                                    <div style="width: ${barWidth}%; height: 15px; background: linear-gradient(90deg, #00ff41, #ffd700); border-radius: 4px;"></div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+
+                // Create skills list safely
+                const skillsList = recommendedCareer.skills.map(skill => '• ' + skill).join('<br>');
+
+                this.gameContent.innerHTML = `
+                    <div class="fade-in">
+                        <div class="section-divider">
+                            <div class="section-title">🎯 CAREER ANALYSIS COMPLETE 🎯</div>
+                        </div>
+
+                        <div class="story-text">
+                            <strong>🎊 Congratulations! Your comprehensive career analysis is complete.</strong><br><br>
+                            Based on advanced algorithmic processing of your responses, I have identified your optimal career trajectory in the Information Technology sector.
+                        </div>
+
+                        <div class="career-result">
+                            <div class="career-title">${recommendedCareer.title}</div>
+                            
+                            <div class="career-description">
+                                <strong>🎯 YOUR MISSION:</strong><br>
+                                ${recommendedCareer.description}
+                            </div>
+
+                            <div class="career-description">
+                                <strong>📈 MARKET OUTLOOK:</strong><br>
+                                ${recommendedCareer.outlook}
+                            </div>
+
+                            <div class="career-description">
+                                <strong>🛠️ KEY SKILLS TO DEVELOP:</strong><br>
+                                ${skillsList}
+                            </div>
+                        </div>
+
+                        <div class="section-divider">
+                            <div class="section-title" style="font-size: 16px;">📊 YOUR COMPATIBILITY SCORES</div>
+                        </div>
+
+                        <div style="background: linear-gradient(135deg, rgba(0,0,0,0.7), rgba(26,26,46,0.3)); border: 2px solid #00ffff; border-radius: 12px; padding: 20px; margin: 20px 0;">
+                            ${scoreDisplay}
+                        </div>
+
+                        <div class="story-text">
+                            <strong>🎓 NEXT STEPS:</strong><br>
+                            Consider pursuing relevant certifications, building a portfolio of projects, and networking with professionals in your recommended field. The technology sector rewards continuous learning and hands-on experience!
+                        </div>
+
+                        <div class="action-buttons">
+                            <button class="action-btn btn-restart highlighted">🔄 ANALYZE AGAIN</button>
+                            <button class="action-btn btn-exit">🚪 EXIT SYSTEM</button>
+                        </div>
+
+                        <div style="text-align: center; margin-top: 20px; color: #ffd700; font-size: 14px;">
+                            [ Keys 1-2: Quick Select ] • [ ←→: Navigate ] • [ ENTER: Confirm ] • [ ESC: Exit ]<br>
+                            Try different answers for other career paths!
+                        </div>
+                    </div>
+                
+                            <strong>🎊 Congratulations! Your comprehensive career analysis is complete.</strong><br><br>
+                            Based on advanced algorithmic processing of your responses, I have identified your optimal career trajectory in the Information Technology sector.
+                        </div>
+
+                        <div class="career-result">
+                            <div class="career-title">${recommendedCareer.title}</div>
+                            
+                            <div class="career-description">
+                                <strong>🎯 YOUR MISSION:</strong><br>
+                                ${recommendedCareer.description}
+                            </div>
+
+                            <div class="career-description">
+                                <strong>📈 MARKET OUTLOOK:</strong><br>
+                                ${recommendedCareer.outlook}
+                            </div>
+
+                            <div class="career-description">
+                                <strong>🛠️ KEY SKILLS TO DEVELOP:</strong><br>
+                                ${recommendedCareer.skills.map(skill => `• ${skill}`).join('<br>')}
+                            </div>
+                        </div>
+
+                        <div class="section-divider">
+                            <div class="section-title" style="font-size: 16px;">📊 YOUR COMPATIBILITY SCORES</div>
+                        </div>
+
+                        <div style="background: linear-gradient(135deg, rgba(0,0,0,0.7), rgba(26,26,46,0.3)); border: 2px solid #00ffff; border-radius: 12px; padding: 20px; margin: 20px 0;">
+                            ${scoreDisplay}
+                        </div>
+
+                        <div class="story-text">
+                            <strong>🎓 NEXT STEPS:</strong><br>
+                            Consider pursuing relevant certifications, building a portfolio of projects, and networking with professionals in your recommended field. The technology sector rewards continuous learning and hands-on experience!
+                        </div>
+
+                        <div class="action-buttons">
+                            <button class="action-btn btn-restart">🔄 ANALYZE AGAIN</button>
+                            <button class="action-btn btn-exit">🚪 EXIT SYSTEM</button>
+                        </div>
+
+                        <div style="text-align: center; margin-top: 20px; color: #ffd700; font-size: 14px;">
+                            [ ENTER to Restart ] • [ ESC to Exit ] • Try different answers for other career paths!
+                        </div>
+                    </div>
+                `;
+            }
+
+            determineCareer() {
+                // Find the career that best matches the player's scores
+                let bestMatch = this.careers[this.careers.length - 1]; // Default to Technology Generalist
+                let bestScore = 0;
+
+                for (const career of this.careers.slice(0, -1)) {
+                    let matchScore = 0;
+                    let hasMinimumRequirements = true;
+
+                    if (Object.keys(career.requirements).length === 0) continue;
+
+                    for (const [category, required] of Object.entries(career.requirements)) {
+                        const playerScore = this.scores[category] || 0;
+                        if (playerScore >= required) {
+                            matchScore += playerScore;
+                        } else {
+                            hasMinimumRequirements = false;
+                            break;
+                        }
+                    }
+
+                    if (hasMinimumRequirements && matchScore > bestScore) {
+                        bestMatch = career;
+                        bestScore = matchScore;
+                    }
+                }
+
+                return bestMatch;
+            }
+
+            restart() {
+                this.currentQuestion = 0;
+                this.selectedOption = 0;
+                this.selectedButton = 0;
+                this.scores = {
+                    security: 0,
+                    development: 0,
+                    systems: 0,
+                    data: 0,
+                    creative: 0,
+                    management: 0,
+                    support: 0
+                };
+                this.showIntroScreen();
+            }
+
+            showExitMessage() {
+                this.currentState = 'exit';
+                this.gameContent.innerHTML = `
+                    <div class="fade-in">
+                        <div class="section-divider">
+                            <div class="section-title">🌟 SYSTEM SHUTDOWN 🌟</div>
+                        </div>
+
+                        <div class="character-ascii">
+                    ╔══════════════════════════════════════════════════════════╗
+                    ║                   THANK YOU FOR USING                    ║
+                    ║              🤖 CAREER PATH SIMULATOR 🤖                ║
+                    ║                                                          ║
+                    ║      "The future belongs to those who prepare for       ║
+                    ║               it with knowledge and passion."            ║
+                    ║                                                          ║
+                    ║              Good luck on your IT journey!               ║
+                    ║                                                          ║
+                    ║    ██████╗ ██╗   ██╗███████╗    ██████╗██████╗ ███████╗ ║
+                    ║    ██╔══██╗╚██╗ ██╔╝██╔════╝   ██╔════╝██╔══██╗██╔════╝ ║
+                    ║    ██████╔╝ ╚████╔╝ █████╗     ██║     ██████╔╝█████╗   ║
+                    ║    ██╔══██╗  ╚██╔╝  ██╔══╝     ██║     ██╔══██╗██╔══╝   ║
+                    ║    ██████╔╝   ██║   ███████╗   ╚██████╗██║  ██║███████╗ ║
+                    ║    ╚═════╝    ╚═╝   ╚══════╝    ╚═════╝╚═╝  ╚═╝╚══════╝ ║
+                    ║                                                          ║
+                    ║              System powering down...                     ║
+                    ╚══════════════════════════════════════════════════════════╝
+                        </div>
+
+                        <div class="story-text">
+                            Remember: The technology industry is constantly evolving, and the best IT professionals are those who embrace lifelong learning, adapt to new challenges, and maintain curiosity about emerging technologies.
+                        </div>
+
+                        <div class="story-text">
+                            Whether you become a cybersecurity expert protecting digital assets, a developer creating innovative solutions, or any other IT professional, your journey in technology will be filled with exciting opportunities to make a meaningful impact.
+                        </div>
+
+                        <div style="text-align: center; margin-top: 40px; color: #ffd700; font-size: 16px; font-weight: bold; border: 2px solid #ffd700; padding: 20px; border-radius: 10px; background: rgba(255,215,0,0.1);">
+                            🚀 PRESS ENTER TO RESTART THE SIMULATION 🚀
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        // Initialize the game when the page loads
+        window.addEventListener('DOMContentLoaded', () => {
+            new CareerSimulator();
+        });
+    </script>
+</body>
+</html>
